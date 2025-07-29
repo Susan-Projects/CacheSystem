@@ -72,3 +72,18 @@ mkdir -p build
 g++ -std=c++17 -pthread test/test_KLruKCache.cpp -Iinclude -o build/test_lruk
 ./build/test_lruk
 ```
+### KHashLruCache_v1.2.0（LRU分片增强版本）
+
+该版本在 KLruCache 的基础上，新增了支持**高并发场景的**Hash**分片**LRU缓存结构。具备以下特点：
+1. 高并发支持（Shard-based）
+将整个缓存按 key 的 hash 值划分为多个分片（Shard），每个分片是一个独立的 KLruCache 实例。每个分片拥有自己的一把锁，最大限度减小线程争用，提升并发性能。
+2. 分片粒度可控
+分片数量由构造函数传入（sliceNum），也可默认使用系统硬件线程数自动分片。解决了KLruCache代码中由于锁的粒度很大，导致在每次读写操作之前都有加锁操作，完成读写操作之后还有解锁操作。在低QPS下，锁的竞争的耗时基本可以忽略；但在高并发的情况下，大量的时间消耗在等待锁的操作上，导致耗时增长。
+3. 完全复用已有缓存结构
+每个分片是标准的 KICachePolicy 派生对象，因此可以支持 KLruCache、KLruKCache 甚至未来的 LFUCache。
+4. 模块说明
+KHashLruCache.h：Hash 分片核心实现；
+分片内部调用：std::hash<Key> → index → shard vector → get()/put()；
+封装设计可作为通用“并发缓存容器”。
+5. 设计模式：装饰器模式 + 组合模式。
+
