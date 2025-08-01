@@ -5,7 +5,7 @@
 This is a Cache System algorithm implementation document in C++. Starting from the BasicLru algorithm in version 0, a modern C++ caching system with modularization, templating, and thread safety has been gradually constructed. At the same time establishing a targeted performance testing system.
 
 
-### 第一步：BasicLRU 实现（v0.1.0）
+### BasicLRU_v0.1.0 Basic实现
 **学习目标：**
 -掌握最基础的 LRU 算法逻辑
 -学会分离 .h 和 .cpp 文件
@@ -99,3 +99,14 @@ KHashLruCache.h：Hash 分片核心实现；
 
 因为性能权衡上是值得的：
 通过分片，每个 shard 上的加锁操作是独立的，大大提升了并发性能；而淘汰“局部最旧/最少”也是一个合理的近似策略：每个 shard 自治淘汰本地的最劣节点。
+
+### KLfuCache_v2.0.0(LFU算法Basic实现)
+分别用到两个哈希表实现LFU（Least Frequently Used）算法：缓存中访问频率最少的数据应该被最早替换掉。
+```cpp
+    unordered_map<int,Node *> hashNode;
+    //节点哈希表，维持FreqList：Key-Node 的映射关系；
+    unordered_map<int,FreqList *> hashFreq;
+    //频数哈希表，维持freq-freqList之间的映射关系。
+```
+- 设计了单独的‘FreqList’类来管理频率级链表
+- 'KLfuCache_impl.hpp'为主要实现,‘Node'结构用双链表指针封装’Key-Value-Freq‘关系
