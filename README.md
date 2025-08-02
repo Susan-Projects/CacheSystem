@@ -5,15 +5,17 @@
 This is a Cache System algorithm implementation document in C++. Starting from the BasicLru algorithm in version 0, a modern C++ caching system with modularization, templating, and thread safety has been gradually constructed. At the same time establishing a targeted performance testing system.
 
 
-### BasicLRU_v0.1.0 Basic实现
+## BasicLRU_v0.1.0 Basic实现
 **学习目标：**
--掌握最基础的 LRU 算法逻辑
--学会分离 .h 和 .cpp 文件
--理解项目编译与测试流程
+- 掌握最基础的 LRU 算法逻辑
+- 学会分离 .h 和 .cpp 文件
+- 理解项目编译与测试流程
+
 **包含文件：**
--include/BasicLRU.h
--src/BasicLRU.cpp
--test/test_cpp
+- include/BasicLRU.h
+- src/BasicLRU.cpp
+- test/test_cpp
+
 **编译命令：**
 请先创建 `build/` 文件夹（如不存在）：mkdir -p build
 ```bash
@@ -21,7 +23,7 @@ g++ -std=c++17 -pthread src/BasicLRU.cpp test/test_cpp -o build/test_basic_lru
 ./build/test_basic_lru
 ```
 
-### KLruCache_v1.0.0（相较于 BasicLru）
+## KLruCache_v1.0.0（相较于 BasicLru）
 
 该版本基于 BasicLRU，进行了模块重构、模板泛化和线程安全增强。
 
@@ -53,7 +55,7 @@ g++ -std=c++17 -pthread test/test_KLruCache.cpp -Iinclude -o build/test_lru
 ./build/test_lru
 ```
 
-### KLruKCache_v1.1.0（基于访问历史的 LRU-K 策略）
+## KLruKCache_v1.1.0（基于访问历史的 LRU-K 策略）
 KLruKCache 在原有 LRU 算法基础上增加了“历史访问队列”，有效避免“冷数据污染主缓存”的问题。
 
 #### 原理简述：
@@ -72,7 +74,7 @@ mkdir -p build
 g++ -std=c++17 -pthread test/test_KLruKCache.cpp -Iinclude -o build/test_lruk
 ./build/test_lruk
 ```
-### KHashLruCache_v1.2.0（LRU分片增强版本）
+## KHashLruCache_v1.2.0（LRU分片增强版本）
 
 该版本在 KLruCache 的基础上，新增了支持**高并发场景的**Hash**分片**LRU缓存结构。具备以下特点：
 1. 高并发支持（Shard-based）
@@ -100,7 +102,7 @@ KHashLruCache.h：Hash 分片核心实现；
 因为性能权衡上是值得的：
 通过分片，每个 shard 上的加锁操作是独立的，大大提升了并发性能；而淘汰“局部最旧/最少”也是一个合理的近似策略：每个 shard 自治淘汰本地的最劣节点。
 
-### KLfuCache_v2.0.0(LFU算法Basic实现)
+## KLfuCache_v2.0.0(LFU算法Basic实现)
 分别用到两个哈希表实现LFU（Least Frequently Used）算法：缓存中访问频率最少的数据应该被最早替换掉。
 ```cpp
     unordered_map<int,Node *> hashNode;
@@ -110,3 +112,19 @@ KHashLruCache.h：Hash 分片核心实现；
 ```
 - 设计了单独的‘FreqList’类来管理频率级链表
 - 'KLfuCache_impl.hpp'为主要实现,‘Node'结构用双链表指针封装’Key-Value-Freq‘关系
+
+## KLfuCache_v2.1.0(LFU算法改进)
+### 引入最大平均访问次数限制机制
+- 添加 `maxAverageNum_` 机制，自动检测并限制频率值爆炸增长。
+- 实现 `handleOverMaxAverage()` 频率衰减策略，防止缓存长驻数据因频率高而难以淘汰。
+- 避免 `INT_MAX` 溢出与过时热点占用缓存空间。
+### 新增：`KHashLfuCache` - 基于分片的 LFU 缓存
+- 采用 hash 分片的方式构造多个独立 `KLfuCache` 实例。
+- 自动分配 slice（默认按 CPU 核数划分）。
+- 支持高并发、低锁粒度访问，提升线程安全下的性能
+#### Files Changed
+> `KLfuCache.h` / `KLfuCache_impl.hpp`
+
+> `KHashLfuCache.h` / `KHashLfuCache_impl.hpp`
+
+> `test/test_KLfuCache.cpp`

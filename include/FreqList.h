@@ -44,6 +44,8 @@ public:
         node->prev_ = tail_->prev_;
         node->next_ = tail_;
         tail_->prev_.lock()->next_= node;
+        //std::weak_ptr<Node> prev_;
+        //尝试获取 shared_ptr，若已释放则返回空
         tail_->prev_= node;
     }
 
@@ -51,6 +53,8 @@ public:
     {
         if (!node || !head_ || !tail_) return;
         if (node->prev_.expired() || !node->next_) return;
+        //尝试获取 shared_ptr，若已释放则返回空
+        //释放返回true
 
         auto prev_ = node->prev_.lock();
         prev_->next_ = node->next_;
