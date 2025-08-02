@@ -2,6 +2,8 @@
 #include "../src/KLfuCache_impl.hpp"
 #include <iostream>
 #include <cassert>
+#include <thread>
+#include <vector>
 using namespace KamaCache;
 
 //基础功能测试
@@ -71,12 +73,39 @@ void testPurge() {
     std::cout << "[PASS] testPurge";
 }
 
+//测试线程
+void threadTask(KLfuCache<int, std::string>& cache, int tid) {
+    for (int i = 0; i < 200; ++i) {
+        int key = rand() % 10;// 对 10 取模，使得 key 的范围是 [0, 9]。
+        std::string val = "T" + std::to_string(tid) + "_" + std::to_string(i);
+        cache.put(key, val);
+
+        std::string out;
+        cache.get(key, out);  // 忽略返回值，测试线程安全
+    }
+}
+
+void testMultiThreaded() {
+    constexpr int THREADS = 4; // 编译时常量。线程数设为 4。
+    KLfuCache<int, std::string> cache(20);
+
+    std::vector<std::thread> ts;
+    for (int i = 0; i < THREADS; ++i) {
+        ts.emplace_back(threadTask, std::ref(cache), i);
+    }
+
+    for (auto& t : ts) t.join();
+
+    std::cout << "[PASS] testMultiThreaded (no crash or race)\n";
+}
+
 int main() {
     testBasic();
     testEvictionByFrequency();
     testUpdateValue();
     testZeroCapacity();
     testPurge();
+    testMultiThreaded();
     std::cout << "✅ All tests passed successfully.";
     return 0;
 }

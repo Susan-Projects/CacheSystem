@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <memory>
 #include <limits>
+#include <mutex>
 #include "FreqList.h"
 #include "KICachePolicy.h"
 
@@ -47,6 +48,7 @@ public:
     void addToFreqList(NodePtr node);
 
 private:
+    mutable std::mutex mutex_;
     int capacity_;
     int minFreq_;
     NodeMap nodeMap_;

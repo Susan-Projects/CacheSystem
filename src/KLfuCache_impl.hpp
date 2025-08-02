@@ -12,6 +12,7 @@ KLfuCache<Key, Value>::KLfuCache(int capacity)
 
 template<typename Key, typename Value>
 void KLfuCache<Key, Value>::put(Key key, Value value){
+    std::lock_guard<std::mutex> lock(mutex_);
     if(capacity_<= 0)  return;
     
     auto it = nodeMap_.find(key);
@@ -26,6 +27,7 @@ void KLfuCache<Key, Value>::put(Key key, Value value){
 
 template<typename Key, typename Value>
 bool KLfuCache<Key, Value>::get(Key key, Value& value){
+    std::lock_guard<std::mutex> lock(mutex_);
     auto it = nodeMap_.find(key);
     if(it==nodeMap_.end())  return false;
 
@@ -35,6 +37,7 @@ bool KLfuCache<Key, Value>::get(Key key, Value& value){
 
 template<typename Key, typename Value>
 Value KLfuCache<Key, Value>::get(Key key){
+    std::lock_guard<std::mutex> lock(mutex_);
     Value value;
     get(key, value);
     return value;
@@ -42,6 +45,7 @@ Value KLfuCache<Key, Value>::get(Key key){
 
 template<typename Key, typename Value>
 void KLfuCache<Key, Value>::purge(){
+    std::lock_guard<std::mutex> lock(mutex_);
     nodeMap_.clear();
     freqListMap_.clear();
     minFreq_=std::numeric_limits<int>::max();
