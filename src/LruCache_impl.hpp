@@ -1,17 +1,18 @@
 #pragma once
 
-#include "KLruCache_v1.h"
-namespace KamaCache{
+#include "../include/LruCache.h"
+
+namespace CacheSystem{
 
 template<typename Key, typename Value>
-KLruCache<Key, Value>::KLruCache(int capacity)
+LruCache<Key, Value>::LruCache(int capacity)
     :   capacity_(capacity){
         initializeList();
     }
 
 //add or update cache
 template<typename Key, typename Value>
-void KLruCache<Key, Value>::put(Key key, Value value){
+void LruCache<Key, Value>::put(Key key, Value value){
     if(capacity_<=0)    return;
 
     std::lock_guard<std::mutex> lock(mutex_);
@@ -24,7 +25,7 @@ void KLruCache<Key, Value>::put(Key key, Value value){
 }
 
 template<typename Key, typename Value>
-bool KLruCache<Key, Value>::get(Key key, Value& value){
+bool LruCache<Key, Value>::get(Key key, Value& value){
     std::lock_guard<std::mutex> lock(mutex_);
     auto it = nodeMap_.find(key);
     if(it!=nodeMap_.end()){
@@ -36,14 +37,14 @@ bool KLruCache<Key, Value>::get(Key key, Value& value){
 }
 
 template<typename Key, typename Value>
-Value KLruCache<Key, Value> ::get(Key key){
+Value LruCache<Key, Value> ::get(Key key){
     Value value{};
     get(key, value);//内部调用了第一个版本
     return value;
 }
 
 template<typename Key, typename Value>
-void KLruCache<Key, Value> ::remove(Key key){
+void LruCache<Key, Value> ::remove(Key key){
     std::lock_guard<std::mutex> lock(mutex_);
     auto it = nodeMap_.find(key);
     if(it!=nodeMap_.end()){
@@ -54,7 +55,7 @@ void KLruCache<Key, Value> ::remove(Key key){
 
 //private 
 template<typename Key, typename Value>
-void KLruCache<Key, Value> ::initializeList(){
+void LruCache<Key, Value> ::initializeList(){
     dummyHead_ = std::make_shared<LruNodeType>(Key(),Value());
     dummyTail_ = std::make_shared<LruNodeType>(Key(), Value());
     dummyHead_->next_ = dummyTail_;
@@ -62,14 +63,14 @@ void KLruCache<Key, Value> ::initializeList(){
 }
 
 template<typename Key, typename Value>
-void KLruCache<Key, Value>::updateExistingNode(NodePtr node, const Value& value){
+void LruCache<Key, Value>::updateExistingNode(NodePtr node, const Value& value){
     node->setValue(value);
     moveToMostRecent(node);
 }
 
 //if full, rm the last one, add at the tail
 template<typename Key, typename Value>
-void KLruCache<Key, Value>::addNewNode(const Key& key, const Value& value){
+void LruCache<Key, Value>::addNewNode(const Key& key, const Value& value){
     if (nodeMap_.size() >= capacity_) {
         evictLeastRecent();//expel the least recent visits
     }
@@ -81,14 +82,14 @@ void KLruCache<Key, Value>::addNewNode(const Key& key, const Value& value){
 
 
 template<typename Key, typename Value>
-void KLruCache<Key, Value>::moveToMostRecent(NodePtr node){
+void LruCache<Key, Value>::moveToMostRecent(NodePtr node){
     removeNode(node);
     insertNode(node);
 }
 
 //discinnect from the linked list
 template<typename Key, typename Value>
-void KLruCache<Key, Value>::removeNode(NodePtr node){
+void LruCache<Key, Value>::removeNode(NodePtr node){
     if(!node->prev_.expired() && node->next_){
         auto prev = node->prev_.lock();
         prev->next_ = node->next_;
@@ -98,7 +99,7 @@ void KLruCache<Key, Value>::removeNode(NodePtr node){
 }
 
 template<typename Key, typename Value>
-void KLruCache<Key, Value>::insertNode(NodePtr node) {
+void LruCache<Key, Value>::insertNode(NodePtr node) {
     node->next_ = dummyTail_;
     node->prev_ = dummyTail_->prev_;
     dummyTail_->prev_.lock()->next_ = node;
@@ -106,7 +107,7 @@ void KLruCache<Key, Value>::insertNode(NodePtr node) {
 }
 
 template<typename Key, typename Value>
-void KLruCache<Key, Value>::evictLeastRecent() {
+void LruCache<Key, Value>::evictLeastRecent() {
     NodePtr leastRecent = dummyHead_->next_;
     removeNode(leastRecent);
     nodeMap_.erase(leastRecent->getKey());
